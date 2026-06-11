@@ -10,6 +10,7 @@ import {
   BarChart3,
   Menu,
   X,
+  DatabaseBackup,
 } from "lucide-react"
 
 const menus = [
@@ -18,6 +19,11 @@ const menus = [
   { title: "Log Pembayaran", href: "/log-ppdb", icon: CreditCard },
   { title: "Kelas PPDB", href: "/kelas-ppdb", icon: Users },
   { title: "Laporan", href: "/laporan", icon: BarChart3 },
+  {
+  title: "Backup Restore",
+  href: "/backup-restore",
+  icon: DatabaseBackup,
+}
 ]
 
 export default function AppSidebar() {
