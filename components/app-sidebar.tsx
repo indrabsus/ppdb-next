@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import LoadingLink from "@/components/loading-link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
 import {
@@ -144,7 +144,7 @@ function SidebarMenu({
         const active = pathname === menu.href
 
         return (
-          <Link
+          <LoadingLink
             key={menu.href}
             href={menu.href}
             onClick={onMenuClick}
@@ -162,7 +162,7 @@ function SidebarMenu({
             <Icon size={18} />
 
             {!collapsed && <span>{menu.title}</span>}
-          </Link>
+          </LoadingLink>
         )
       })}
     </nav>
