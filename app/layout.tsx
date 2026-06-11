@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { SidebarProvider } from "@/contexts/sidebar-context"
+import TopLoader from "@/components/top-loader"
 
 export const metadata: Metadata = {
   title: "PPDB SMK Sangkuriang 1 Cimahi",
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body>
+        <TopLoader />
         <SidebarProvider>{children}</SidebarProvider>
       </body>
     </html>
