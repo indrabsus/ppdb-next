@@ -23,8 +23,6 @@ const API_PPDB = process.env.NEXT_PUBLIC_API_URL
 const PAGE_SIZE = 25
 
 const PRINT_BASE = "https://sakuci.id"
-const PRINT_BUKTI_BASE =
-  "https://sakuci.id/22ceb721-fbca-41bd-ba1a-dbebf9f104fe/ppdbLog"
 
 type JenisLog = "d" | "p" | "l"
 type BayarVia = "csh" | "trf" | "sbs"
@@ -333,8 +331,11 @@ export default function LogPpdbPage() {
   }
 
   const printBukti = (idLog: string) => {
-    window.open(`${PRINT_BUKTI_BASE}/${idLog}`, "_blank")
-  }
+  window.open(
+    `https://sakuci.id/${idLog}/ppdbLog`,
+    "_blank"
+  )
+}
 
   const printRekap = () => {
     if (!startDate || !endDate) {
