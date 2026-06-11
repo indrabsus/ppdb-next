@@ -969,7 +969,7 @@ Pendaftaran PPDB berhasil ✅
 Bukti Bayar:
 https://sakuci.id/${idLog}/ppdbLog
 
-Silahkan akses link berikut untuk bergabung di grup Gelombang 1 SPMB SMK Sangkuriang 1 Cimahi
+Silahkan akses link berikut untuk bergabung di grup Gelombang 2 SPMB SMK Sangkuriang 1 Cimahi
 
 https://chat.whatsapp.com/CPaKRKAOkcL3oAeeP1Q8VA
 
