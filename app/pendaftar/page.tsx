@@ -955,6 +955,51 @@ function ModalBayar({
         return
       }
 
+      if (jenis === "d" && siswa.no_hp) {
+  const idLog =
+    json?.data?.id_log ||
+    json?.id_log ||
+    ""
+
+  const pesanWa = `
+Halo ${siswa.nama_lengkap}
+
+Pendaftaran PPDB berhasil ✅
+
+Bukti Bayar:
+https://sakuci.id/${idLog}/ppdbLog
+
+Silahkan akses link berikut untuk bergabung di grup Gelombang 1 SPMB SMK Sangkuriang 1 Cimahi
+
+https://chat.whatsapp.com/CPaKRKAOkcL3oAeeP1Q8VA
+
+Note:
+Diharapkan untuk tidak menyebarkan link tersebut ke pihak manapun.
+
+Terima Kasih
+
+Panitia SPMB SMK Sangkuriang 1 Cimahi
+
+Note:
+Jika link tidak bisa diklik, silakan simpan terlebih dahulu nomor ini.
+`
+
+  try {
+    await fetch(`${API_WA}/notifuser`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        nomor: siswa.no_hp,
+        pesan: pesanWa,
+      }),
+    })
+  } catch (err) {
+    console.error("WA gagal dikirim", err)
+  }
+}
+
       await Swal.fire({
         title: "Berhasil",
         text:
