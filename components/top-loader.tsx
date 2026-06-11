@@ -1,18 +1,13 @@
 "use client"
 
 import { useEffect } from "react"
+import { usePathname } from "next/navigation"
 import NProgress from "nprogress"
-import { usePathname, useSearchParams } from "next/navigation"
 
 import "nprogress/nprogress.css"
 
 export default function TopLoader() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    NProgress.done()
-  }, [pathname, searchParams])
 
   useEffect(() => {
     NProgress.configure({
@@ -20,6 +15,10 @@ export default function TopLoader() {
       trickleSpeed: 100,
     })
   }, [])
+
+  useEffect(() => {
+    NProgress.done()
+  }, [pathname])
 
   return null
 }
