@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { API_URL } from "@/lib/api"
 import { isAllowedPpdb } from "@/lib/auth"
+import Image from "next/image"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -70,9 +71,16 @@ export default function LoginPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
         <div className="text-center mb-8">
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-blue-500 flex items-center justify-center text-white font-bold text-2xl">
-            P
-          </div>
+          <div className="mx-auto h-24 w-24 overflow-hidden rounded-3xl bg-white p-3 shadow-lg">
+  <Image
+    src="/logo.png"
+    alt="Logo SMK Sangkuriang"
+    width={96}
+    height={96}
+    className="h-full w-full object-contain"
+    priority
+  />
+</div>
 
           <h1 className="text-3xl font-bold text-white mt-5">
             Login PPDB
