@@ -260,7 +260,7 @@ export default function LaporanPage() {
       value: laporan.uangLebih1JutaBelumLunas,
     },
     { label: "PPDB lunas", value: laporan.uangLunas },
-    { label: "Status l", value: laporan.uangMengundurkan },
+    { label: "Status Undur", value: laporan.uangMengundurkan },
   ]
 
   const statusData = [
@@ -499,7 +499,7 @@ export default function LaporanPage() {
                       value={String(laporan.mengundurkan)}
                     />
                     <InfoCard
-                      title="Uang Status l"
+                      title="Uang Status Undur"
                       value={rupiahShort(laporan.uangMengundurkan)}
                     />
                   </div>
@@ -524,7 +524,7 @@ export default function LaporanPage() {
                         ],
                         ["PPDB lunas", rupiahShort(laporan.uangLunas)],
                         ["Total PPDB", rupiahShort(laporan.uangPpdb)],
-                        ["Status l", rupiahShort(laporan.uangMengundurkan)],
+                        ["Status Undur", rupiahShort(laporan.uangMengundurkan)],
                         ["Total masuk", rupiahShort(laporan.totalKeuangan)],
                       ]}
                     />

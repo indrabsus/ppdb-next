@@ -1056,7 +1056,7 @@ Jika link tidak bisa diklik, silakan simpan terlebih dahulu nomor ini.
           <input
             value={petugas}
             onChange={(e) => setPetugas(e.target.value)}
-            placeholder="Contoh: Bu Siti"
+            placeholder="Contoh: IB"
             className="w-full rounded-xl border px-4 py-2"
           />
         </div>
