@@ -5,7 +5,6 @@ import AppHeader from "@/components/app-header"
 import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
 import Swal from "sweetalert2"
-import withReactContent from "sweetalert2-react-content"
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,8 +15,6 @@ import {
   Loader2,
   Printer,
 } from "lucide-react"
-
-const MySwal = withReactContent(Swal)
 
 const API_PPDB = process.env.NEXT_PUBLIC_API_URL
 const PAGE_SIZE = 25
@@ -225,6 +222,10 @@ export default function LogPpdbPage() {
     })
   }, [logs, search, jenisFilter, startDate, endDate])
 
+  const logsTanpaMengundurkan = useMemo(() => {
+    return filteredLogs.filter((item) => item.jenis !== "l")
+  }, [filteredLogs])
+
   const sortedLogs = useMemo(() => {
     const data = [...filteredLogs]
 
@@ -282,36 +283,28 @@ export default function LogPpdbPage() {
   }, [sortedLogs, page])
 
   const statistik = useMemo(() => {
-  const daftar = filteredLogs.filter((item) => item.jenis === "d")
-  const ppdb = filteredLogs.filter((item) => item.jenis === "p")
-  const mengundurkan = filteredLogs.filter((item) => item.jenis === "l")
-  const subsidi = filteredLogs.filter((item) => item.bayar === "sbs")
+    const daftar = logsTanpaMengundurkan.filter((item) => item.jenis === "d")
+    const ppdb = logsTanpaMengundurkan.filter((item) => item.jenis === "p")
+    const subsidi = logsTanpaMengundurkan.filter((item) => item.bayar === "sbs")
 
-  const totalNominal = filteredLogs
-    .filter((item) => item.bayar !== "sbs")
-    .reduce((sum, item) => sum + toNumber(item.nominal), 0)
+    const totalNominal = logsTanpaMengundurkan
+      .filter((item) => item.bayar !== "sbs")
+      .reduce((sum, item) => sum + toNumber(item.nominal), 0)
 
-  const nominalSubsidi = subsidi.reduce(
-    (sum, item) => sum + toNumber(item.nominal),
-    0
-  )
+    const nominalSubsidi = subsidi.reduce(
+      (sum, item) => sum + toNumber(item.nominal),
+      0
+    )
 
-  const nominalMengundurkan = mengundurkan.reduce(
-    (sum, item) => sum + toNumber(item.nominal),
-    0
-  )
-
-  return {
-    total: filteredLogs.length,
-    daftar: daftar.length,
-    ppdb: ppdb.length,
-    mengundurkan: mengundurkan.length,
-    subsidi: subsidi.length,
-    totalNominal,
-    nominalSubsidi,
-    nominalMengundurkan,
-  }
-}, [filteredLogs])
+    return {
+      total: logsTanpaMengundurkan.length,
+      daftar: daftar.length,
+      ppdb: ppdb.length,
+      subsidi: subsidi.length,
+      totalNominal,
+      nominalSubsidi,
+    }
+  }, [logsTanpaMengundurkan])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -341,7 +334,222 @@ export default function LogPpdbPage() {
     window.open(`${PRINT_BASE}/${idLog}/ppdbLog`, "_blank")
   }
 
-  const printRekap = () => {
+  const printRekapInternal = () => {
+    const dataPrint = logsTanpaMengundurkan
+
+    const totalDaftar = dataPrint
+      .filter((item) => item.jenis === "d" && item.bayar !== "sbs")
+      .reduce((sum, item) => sum + toNumber(item.nominal), 0)
+
+    const totalPpdb = dataPrint
+      .filter((item) => item.jenis === "p" && item.bayar !== "sbs")
+      .reduce((sum, item) => sum + toNumber(item.nominal), 0)
+
+    const totalSubsidi = dataPrint
+      .filter((item) => item.bayar === "sbs")
+      .reduce((sum, item) => sum + toNumber(item.nominal), 0)
+
+    const totalNominal = totalDaftar + totalPpdb
+
+    const html = `
+      <html>
+        <head>
+          <title>Rekap PPDB ${tahun}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 24px;
+              color: #0f172a;
+            }
+
+            h1, h2, p {
+              margin: 0;
+            }
+
+            .header {
+              text-align: center;
+              margin-bottom: 24px;
+            }
+
+            .header h1 {
+              font-size: 22px;
+              margin-bottom: 6px;
+            }
+
+            .header p {
+              font-size: 13px;
+              color: #475569;
+            }
+
+            .cards {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 12px;
+              margin-bottom: 20px;
+            }
+
+            .card {
+              border: 1px solid #cbd5e1;
+              border-radius: 12px;
+              padding: 12px;
+            }
+
+            .card .label {
+              font-size: 12px;
+              color: #64748b;
+              margin-bottom: 6px;
+            }
+
+            .card .value {
+              font-size: 17px;
+              font-weight: bold;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 12px;
+            }
+
+            th, td {
+              border: 1px solid #cbd5e1;
+              padding: 8px;
+            }
+
+            th {
+              background: #f1f5f9;
+              text-align: left;
+            }
+
+            .right {
+              text-align: right;
+            }
+
+            .footer {
+              margin-top: 30px;
+              display: flex;
+              justify-content: flex-end;
+            }
+
+            .ttd {
+              width: 220px;
+              text-align: center;
+              font-size: 13px;
+            }
+
+            @media print {
+              body {
+                padding: 12px;
+              }
+            }
+          </style>
+        </head>
+
+        <body>
+          <div class="header">
+            <h1>REKAP PEMBAYARAN PPDB ${tahun}</h1>
+            <p>SMK Sangkuriang 1 Cimahi</p>
+            <p>
+              ${
+                startDate && endDate
+                  ? `Periode ${startDate} s/d ${endDate}`
+                  : "Semua data sesuai filter"
+              }
+            </p>
+          </div>
+
+          <div class="cards">
+            <div class="card">
+              <div class="label">Total Log</div>
+              <div class="value">${dataPrint.length}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Uang Daftar</div>
+              <div class="value">${rupiah(totalDaftar)}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Uang PPDB</div>
+              <div class="value">${rupiah(totalPpdb)}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Total Masuk</div>
+              <div class="value">${rupiah(totalNominal)}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Nominal Subsidi</div>
+              <div class="value">${rupiah(totalSubsidi)}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Nama Siswa</th>
+                <th>Invoice</th>
+                <th>Status</th>
+                <th>Via</th>
+                <th>Petugas</th>
+                <th class="right">Nominal</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${
+                dataPrint.length === 0
+                  ? `<tr><td colspan="8" style="text-align:center">Tidak ada data</td></tr>`
+                  : dataPrint
+                      .map(
+                        (item, index) => `
+                          <tr>
+                            <td>${index + 1}</td>
+                            <td>${formatTanggal(item.created_at)}</td>
+                            <td>${item.siswa_ppdb?.nama_lengkap || "-"}</td>
+                            <td>${item.no_invoice || "-"}</td>
+                            <td>${jenisLabel[item.jenis]}</td>
+                            <td>${item.bayar ? bayarLabel[item.bayar] : "-"}</td>
+                            <td>${item.petugas || "-"}</td>
+                            <td class="right">${rupiah(toNumber(item.nominal))}</td>
+                          </tr>
+                        `
+                      )
+                      .join("")
+              }
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <div class="ttd">
+              <p>Cimahi, ${new Date().toLocaleDateString("id-ID")}</p>
+              <p>Panitia PPDB</p>
+              <br/><br/><br/>
+              <p>________________________</p>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print()
+            }
+          </script>
+        </body>
+      </html>
+    `
+
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+
+    printWindow.document.open()
+    printWindow.document.write(html)
+    printWindow.document.close()
+  }
+
+  const printRekapExternal = () => {
     if (!startDate || !endDate) {
       Swal.fire(
         "Tanggal belum lengkap",
@@ -370,12 +578,12 @@ export default function LogPpdbPage() {
                   Log PPDB {tahun}
                 </h1>
                 <p className="text-sm text-slate-500">
-                  Data transaksi daftar, PPDB, subsidi, dan mengundurkan diri.
+                  Data transaksi daftar, PPDB, dan subsidi.
                 </p>
               </div>
 
               <button
-                onClick={printRekap}
+                onClick={printRekapInternal}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 <Printer size={16} />
@@ -390,29 +598,30 @@ export default function LogPpdbPage() {
             )}
 
             <section className="space-y-4">
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-    <InfoCard title="Total Log" value={String(statistik.total)} />
-    <InfoCard title="Daftar" value={String(statistik.daftar)} />
-    <InfoCard title="PPDB" value={String(statistik.ppdb)} />
-    <InfoCard title="Mengundurkan" value={String(statistik.mengundurkan)} />
-  </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <InfoCard title="Total Log" value={String(statistik.total)} />
+                <InfoCard title="Daftar" value={String(statistik.daftar)} />
+                <InfoCard title="PPDB" value={String(statistik.ppdb)} />
+                <InfoCard title="Subsidi" value={String(statistik.subsidi)} />
+              </div>
 
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-    <InfoCard title="Subsidi" value={String(statistik.subsidi)} />
-    <InfoCard
-      title="Nominal Subsidi"
-      value={rupiah(statistik.nominalSubsidi)}
-    />
-    <InfoCard
-      title="Nominal Mengundurkan"
-      value={rupiah(statistik.nominalMengundurkan)}
-    />
-    <InfoCard
-      title="Total Nominal"
-      value={rupiah(statistik.totalNominal)}
-    />
-  </div>
-</section>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <InfoCard
+                  title="Nominal Subsidi"
+                  value={rupiah(statistik.nominalSubsidi)}
+                />
+
+                <InfoCard
+                  title="Total Nominal"
+                  value={rupiah(statistik.totalNominal)}
+                />
+
+                <InfoCard
+                  title="Total Data Ditampilkan"
+                  value={String(statistik.total)}
+                />
+              </div>
+            </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
@@ -452,11 +661,11 @@ export default function LogPpdbPage() {
                 />
 
                 <button
-                  onClick={printRekap}
+                  onClick={printRekapExternal}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                 >
                   <FileText size={16} />
-                  Print
+                  Print Lama
                 </button>
               </div>
             </section>
@@ -910,9 +1119,6 @@ function ModalEditLog({
             className="w-full rounded-xl border px-4 py-2"
             autoComplete="off"
           />
-          <p className="mt-1 text-xs text-slate-500">
-            Kode akses wajib untuk edit dan hapus log.
-          </p>
         </div>
 
         <div>
