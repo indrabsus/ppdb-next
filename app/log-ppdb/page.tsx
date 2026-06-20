@@ -21,7 +21,6 @@ const MySwal = withReactContent(Swal)
 
 const API_PPDB = process.env.NEXT_PUBLIC_API_URL
 const PAGE_SIZE = 25
-
 const PRINT_BASE = "https://sakuci.id"
 
 type JenisLog = "d" | "p" | "l"
@@ -156,18 +155,13 @@ export default function LogPpdbPage() {
       setTahun(tahunAktif)
 
       const token = localStorage.getItem("token_ppdb")
-
       const headers = {
         Authorization: `Bearer ${token}`,
       }
 
       const [logRes, masterRes] = await Promise.all([
-        fetch(`${API_PPDB}/ppdb/log/${tahunAktif}`, {
-          headers,
-        }),
-        fetch(`${API_PPDB}/ppdb/masterppdb?tahun=${tahunAktif}`, {
-          headers,
-        }),
+        fetch(`${API_PPDB}/ppdb/log/${tahunAktif}`, { headers }),
+        fetch(`${API_PPDB}/ppdb/masterppdb?tahun=${tahunAktif}`, { headers }),
       ])
 
       const logJson = await logRes.json()
@@ -199,9 +193,15 @@ export default function LogPpdbPage() {
 
     return logs.filter((item) => {
       const nama = item.siswa_ppdb?.nama_lengkap || ""
-      const cocokNama = nama.toLowerCase().includes(keyword)
+      const invoice = item.no_invoice || ""
+      const petugas = item.petugas || ""
 
-      if (!cocokNama) return false
+      const cocokSearch =
+        nama.toLowerCase().includes(keyword) ||
+        invoice.toLowerCase().includes(keyword) ||
+        petugas.toLowerCase().includes(keyword)
+
+      if (!cocokSearch) return false
 
       if (jenisFilter !== "semua" && item.jenis !== jenisFilter) {
         return false
@@ -282,29 +282,36 @@ export default function LogPpdbPage() {
   }, [sortedLogs, page])
 
   const statistik = useMemo(() => {
-    const daftar = filteredLogs.filter((item) => item.jenis === "d")
-    const ppdb = filteredLogs.filter((item) => item.jenis === "p")
-    const bebas = filteredLogs.filter((item) => item.jenis === "l")
+  const daftar = filteredLogs.filter((item) => item.jenis === "d")
+  const ppdb = filteredLogs.filter((item) => item.jenis === "p")
+  const mengundurkan = filteredLogs.filter((item) => item.jenis === "l")
+  const subsidi = filteredLogs.filter((item) => item.bayar === "sbs")
 
-    const totalNominal = filteredLogs.reduce(
-      (sum, item) => sum + toNumber(item.nominal),
-      0
-    )
+  const totalNominal = filteredLogs
+    .filter((item) => item.bayar !== "sbs")
+    .reduce((sum, item) => sum + toNumber(item.nominal), 0)
 
-    const nominalBebas = bebas.reduce(
-      (sum, item) => sum + toNumber(item.nominal),
-      0
-    )
+  const nominalSubsidi = subsidi.reduce(
+    (sum, item) => sum + toNumber(item.nominal),
+    0
+  )
 
-    return {
-      total: filteredLogs.length,
-      daftar: daftar.length,
-      ppdb: ppdb.length,
-      bebas: bebas.length,
-      totalNominal,
-      nominalBebas,
-    }
-  }, [filteredLogs])
+  const nominalMengundurkan = mengundurkan.reduce(
+    (sum, item) => sum + toNumber(item.nominal),
+    0
+  )
+
+  return {
+    total: filteredLogs.length,
+    daftar: daftar.length,
+    ppdb: ppdb.length,
+    mengundurkan: mengundurkan.length,
+    subsidi: subsidi.length,
+    totalNominal,
+    nominalSubsidi,
+    nominalMengundurkan,
+  }
+}, [filteredLogs])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -331,11 +338,8 @@ export default function LogPpdbPage() {
   }
 
   const printBukti = (idLog: string) => {
-  window.open(
-    `https://sakuci.id/${idLog}/ppdbLog`,
-    "_blank"
-  )
-}
+    window.open(`${PRINT_BASE}/${idLog}/ppdbLog`, "_blank")
+  }
 
   const printRekap = () => {
     if (!startDate || !endDate) {
@@ -356,7 +360,7 @@ export default function LogPpdbPage() {
       <div className="flex min-h-screen bg-slate-100">
         <AppSidebar />
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <AppHeader />
 
           <main className="space-y-6 p-6">
@@ -366,7 +370,7 @@ export default function LogPpdbPage() {
                   Log PPDB {tahun}
                 </h1>
                 <p className="text-sm text-slate-500">
-                  Data transaksi daftar, PPDB, dan Mengundurkan diri.
+                  Data transaksi daftar, PPDB, subsidi, dan mengundurkan diri.
                 </p>
               </div>
 
@@ -385,27 +389,37 @@ export default function LogPpdbPage() {
               </div>
             )}
 
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-6">
-              <InfoCard title="Total Log" value={String(statistik.total)} />
-              <InfoCard title="Daftar" value={String(statistik.daftar)} />
-              <InfoCard title="PPDB" value={String(statistik.ppdb)} />
-              <InfoCard title="Mengundurkan Diri" value={String(statistik.bebas)} />
-              <InfoCard
-                title="Nominal Bebas"
-                value={rupiah(statistik.nominalBebas)}
-              />
-              <InfoCard
-                title="Total Nominal"
-                value={rupiah(statistik.totalNominal)}
-              />
-            </section>
+            <section className="space-y-4">
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <InfoCard title="Total Log" value={String(statistik.total)} />
+    <InfoCard title="Daftar" value={String(statistik.daftar)} />
+    <InfoCard title="PPDB" value={String(statistik.ppdb)} />
+    <InfoCard title="Mengundurkan" value={String(statistik.mengundurkan)} />
+  </div>
+
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <InfoCard title="Subsidi" value={String(statistik.subsidi)} />
+    <InfoCard
+      title="Nominal Subsidi"
+      value={rupiah(statistik.nominalSubsidi)}
+    />
+    <InfoCard
+      title="Nominal Mengundurkan"
+      value={rupiah(statistik.nominalMengundurkan)}
+    />
+    <InfoCard
+      title="Total Nominal"
+      value={rupiah(statistik.totalNominal)}
+    />
+  </div>
+</section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari nama siswa..."
+                  placeholder="Cari nama, invoice, petugas..."
                   className="rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none"
                   autoComplete="off"
                 />
@@ -526,7 +540,11 @@ export default function LogPpdbPage() {
                               </td>
 
                               <td className="px-4 py-3">
-                                {item.bayar ? bayarLabel[item.bayar] : "-"}
+                                {item.bayar ? (
+                                  <BayarBadge bayar={item.bayar} />
+                                ) : (
+                                  "-"
+                                )}
                               </td>
 
                               <td className="px-4 py-3">
@@ -641,7 +659,7 @@ function InfoCard({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm text-slate-500">{title}</p>
-      <h2 className="mt-2 text-2xl font-bold text-slate-800">{value}</h2>
+      <h2 className="mt-2 text-xl font-bold text-slate-800">{value}</h2>
     </div>
   )
 }
@@ -682,7 +700,31 @@ function StatusBadge({ jenis }: { jenis: JenisLog }) {
 
   return (
     <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-      Mengundurkan Diri
+      Mengundurkan
+    </span>
+  )
+}
+
+function BayarBadge({ bayar }: { bayar: BayarVia }) {
+  if (bayar === "csh") {
+    return (
+      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+        Cash
+      </span>
+    )
+  }
+
+  if (bayar === "trf") {
+    return (
+      <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
+        Transfer
+      </span>
+    )
+  }
+
+  return (
+    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+      Subsidi
     </span>
   )
 }
@@ -763,7 +805,7 @@ function ModalEditLog({
         formData.append("bukti", bukti)
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ppdb/updatelog/${log.id_log}`, {
+      const res = await fetch(`${API_PPDB}/ppdb/updatelog/${log.id_log}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -815,7 +857,7 @@ function ModalEditLog({
 
       const token = localStorage.getItem("token_ppdb")
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ppdb/deletelog/${log.id_log}`, {
+      const res = await fetch(`${API_PPDB}/ppdb/deletelog/${log.id_log}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

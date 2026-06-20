@@ -1315,7 +1315,7 @@ function ModalHapus({
       const token = localStorage.getItem("token_ppdb")
 
       const res = await fetch(`${API_PPDB}/ppdb/undursiswa`, {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
