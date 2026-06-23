@@ -961,43 +961,43 @@ function ModalBayar({
     json?.id_log ||
     ""
 
-  const pesanWa = `
-Halo ${siswa.nama_lengkap}
+//   const pesanWa = `
+// Halo ${siswa.nama_lengkap}
 
-Pendaftaran PPDB berhasil ✅
+// Pendaftaran PPDB berhasil ✅
 
-Bukti Bayar:
-https://sakuci.id/${idLog}/ppdbLog
+// Bukti Bayar:
+// https://sakuci.id/${idLog}/ppdbLog
 
-Silahkan akses link berikut untuk bergabung di grup Gelombang 2 SPMB SMK Sangkuriang 1 Cimahi
+// Silahkan akses link berikut untuk bergabung di grup Gelombang 2 SPMB SMK Sangkuriang 1 Cimahi
 
-https://chat.whatsapp.com/CPaKRKAOkcL3oAeeP1Q8VA
+// https://chat.whatsapp.com/CPaKRKAOkcL3oAeeP1Q8VA
 
-Note:
-Diharapkan untuk tidak menyebarkan link tersebut ke pihak manapun.
+// Note:
+// Diharapkan untuk tidak menyebarkan link tersebut ke pihak manapun.
 
-Terima Kasih
+// Terima Kasih
 
-Panitia SPMB SMK Sangkuriang 1 Cimahi
+// Panitia SPMB SMK Sangkuriang 1 Cimahi
 
-Note:
-Jika link tidak bisa diklik, silakan simpan terlebih dahulu nomor ini.
-`
+// Note:
+// Jika link tidak bisa diklik, silakan simpan terlebih dahulu nomor ini.
+// `
 
-  try {
-    await fetch(`${API_WA}/notifuser`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        nomor: siswa.no_hp,
-        pesan: pesanWa,
-      }),
-    })
-  } catch (err) {
-    console.error("WA gagal dikirim", err)
-  }
+//   try {
+//     await fetch(`${API_WA}/notifuser`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         nomor: siswa.no_hp,
+//         pesan: pesanWa,
+//       }),
+//     })
+//   } catch (err) {
+//     console.error("WA gagal dikirim", err)
+//   }
 }
 
       await Swal.fire({

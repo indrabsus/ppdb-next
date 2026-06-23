@@ -293,17 +293,26 @@ export default function LaporanPage() {
   }, [siswaKelas])
 
   const minatJurusanData = useMemo(() => {
-    const map = new Map<string, number>()
+  const map = new Map<string, number>()
 
-    siswa.forEach((item) => {
+  siswa
+    .filter((item) => item.bayar_daftar === "y")
+    .forEach((item) => {
       const jurusan = item.minat_jurusan1 || "Belum Memilih"
-      map.set(jurusan, (map.get(jurusan) || 0) + 1)
+
+      map.set(
+        jurusan,
+        (map.get(jurusan) || 0) + 1
+      )
     })
 
-    return Array.from(map.entries())
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value)
-  }, [siswa])
+  return Array.from(map.entries())
+    .map(([label, value]) => ({
+      label,
+      value,
+    }))
+    .sort((a, b) => b.value - a.value)
+}, [siswa])
 
   const kelasData = useMemo(() => {
     return kelas.map((item) => {
