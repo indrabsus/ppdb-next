@@ -6,10 +6,12 @@ import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
 import Swal from "sweetalert2"
 import {
+  Download,
   Edit,
   Eye,
   Loader2,
   Plus,
+  Printer,
   Trash2,
 } from "lucide-react"
 
@@ -52,6 +54,12 @@ type SiswaKelas = {
   kelas_ppdb?: KelasPpdb
 }
 
+type PrintData = {
+  title: string
+  columns: string[]
+  rows: string[][]
+}
+
 export default function KelasPpdbPage() {
   const [tahun, setTahun] = useState(new Date().getFullYear())
   const [kelas, setKelas] = useState<KelasPpdb[]>([])
@@ -68,6 +76,14 @@ export default function KelasPpdbPage() {
   const [modalFormKelas, setModalFormKelas] = useState(false)
   const [modeForm, setModeForm] = useState<"tambah" | "edit">("tambah")
   const [kelasEdit, setKelasEdit] = useState<KelasPpdb | null>(null)
+
+  const [modalDownloadJurusan, setModalDownloadJurusan] = useState(false)
+  const [idJurusanDownload, setIdJurusanDownload] = useState("")
+  const [downloadingJurusan, setDownloadingJurusan] = useState(false)
+  const [downloadingKelasId, setDownloadingKelasId] = useState<string | null>(
+    null
+  )
+  const [printData, setPrintData] = useState<PrintData | null>(null)
 
   const fetchKelas = async () => {
     try {
@@ -305,15 +321,141 @@ export default function KelasPpdbPage() {
     }
   }
 
+  const cetakPdf = (data: PrintData) => {
+    setPrintData(data)
+
+    setTimeout(() => {
+      window.print()
+      setPrintData(null)
+    }, 100)
+  }
+
+  const downloadPdfKelas = async (item: KelasPpdb) => {
+    try {
+      setDownloadingKelasId(item.id_kelas)
+
+      const token = localStorage.getItem("token_ppdb")
+
+      const res = await fetch(
+        `${API_PPDB}/ppdb/siswakelas/${tahun}/${item.id_kelas}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        Swal.fire("Gagal", json.message || "Gagal mengambil siswa kelas", "error")
+        return
+      }
+
+      const data: SiswaKelas[] = Array.isArray(json.data) ? json.data : []
+
+      cetakPdf({
+        title: `Daftar Siswa Kelas ${item.nama_kelas} - PPDB ${tahun}`,
+        columns: ["Siswa", "Asal Sekolah", "Kelas"],
+        rows: data.map((row) => [
+          row.siswa_ppdb?.nama_lengkap || "-",
+          row.siswa_ppdb?.asal_sekolah || "-",
+          row.kelas_ppdb?.nama_kelas || item.nama_kelas,
+        ]),
+      })
+    } catch (error: any) {
+      Swal.fire("Error", error.message || "Terjadi kesalahan", "error")
+    } finally {
+      setDownloadingKelasId(null)
+    }
+  }
+
+  const downloadPdfJurusan = async () => {
+    try {
+      setDownloadingJurusan(true)
+
+      const token = localStorage.getItem("token_ppdb")
+
+      const res = await fetch(`${API_PPDB}/ppdb/siswakelas/${tahun}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        Swal.fire("Gagal", json.message || "Gagal mengambil siswa", "error")
+        return
+      }
+
+      const data: SiswaKelas[] = Array.isArray(json.data) ? json.data : []
+
+      const filtered = idJurusanDownload
+        ? data.filter(
+            (row) => row.kelas_ppdb?.id_jurusan === idJurusanDownload
+          )
+        : data
+
+      const namaJurusan = idJurusanDownload
+        ? jurusan.find((item) => item.id_jurusan === idJurusanDownload)
+            ?.nama_jurusan || "Jurusan"
+        : "Semua Jurusan"
+
+      setModalDownloadJurusan(false)
+
+      cetakPdf({
+        title: `Daftar Siswa ${namaJurusan} - PPDB ${tahun}`,
+        columns: ["Nama", "Asal Sekolah", "Jurusan"],
+        rows: filtered.map((row) => [
+          row.siswa_ppdb?.nama_lengkap || "-",
+          row.siswa_ppdb?.asal_sekolah || "-",
+          row.kelas_ppdb?.jurusan_ppdb?.nama_jurusan || "-",
+        ]),
+      })
+    } catch (error: any) {
+      Swal.fire("Error", error.message || "Terjadi kesalahan", "error")
+    } finally {
+      setDownloadingJurusan(false)
+    }
+  }
+
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-slate-100">
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm;
+          }
+
+          body {
+            background: white !important;
+          }
+
+          aside,
+          header,
+          .no-print {
+            display: none !important;
+          }
+
+          .print-only {
+            display: block !important;
+          }
+        }
+
+        .print-only {
+          display: none;
+        }
+      `}</style>
+
+      <div className="no-print flex min-h-screen bg-slate-100">
         <AppSidebar />
 
         <div className="flex-1">
           <AppHeader />
 
-          <main className="space-y-6 p-6">
+          <main className="no-print space-y-6 p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-slate-800">
@@ -324,7 +466,7 @@ export default function KelasPpdbPage() {
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -332,6 +474,17 @@ export default function KelasPpdbPage() {
                   autoComplete="off"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none"
                 />
+
+                <button
+                  onClick={() => {
+                    setIdJurusanDownload("")
+                    setModalDownloadJurusan(true)
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  <Download size={16} />
+                  Download PDF
+                </button>
 
                 <button
                   onClick={openTambahKelas}
@@ -454,6 +607,19 @@ export default function KelasPpdbPage() {
                                   </button>
 
                                   <button
+                                    onClick={() => downloadPdfKelas(item)}
+                                    disabled={downloadingKelasId === item.id_kelas}
+                                    title="Download PDF siswa kelas"
+                                    className="border-r px-3 py-2 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                                  >
+                                    {downloadingKelasId === item.id_kelas ? (
+                                      <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                      <Download size={16} />
+                                    )}
+                                  </button>
+
+                                  <button
                                     onClick={() => openEditKelas(item)}
                                     title="Edit kelas"
                                     className="border-r px-3 py-2 text-amber-600 hover:bg-amber-50"
@@ -570,6 +736,104 @@ export default function KelasPpdbPage() {
             fetchKelas()
           }}
         />
+      )}
+
+      {modalDownloadJurusan && (
+        <Modal
+          title="Download PDF Siswa per Jurusan"
+          onClose={() => setModalDownloadJurusan(false)}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm text-slate-600">
+                Jurusan
+              </label>
+              <select
+                value={idJurusanDownload}
+                onChange={(e) => setIdJurusanDownload(e.target.value)}
+                className="w-full rounded-xl border px-4 py-2"
+              >
+                <option value="">Semua Jurusan</option>
+                {jurusan.map((item) => (
+                  <option key={item.id_jurusan} value={item.id_jurusan}>
+                    {item.nama_jurusan}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={downloadPdfJurusan}
+              disabled={downloadingJurusan}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2 font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {downloadingJurusan ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              {downloadingJurusan ? "Menyiapkan..." : "Download PDF"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {printData && (
+        <div className="print-only p-4">
+          <div className="mb-4 flex items-center gap-3">
+            <Printer size={20} />
+            <h1 className="text-lg font-bold text-slate-800">
+              {printData.title}
+            </h1>
+          </div>
+
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr>
+                <th className="border border-slate-400 px-3 py-2 text-left">
+                  No
+                </th>
+                {printData.columns.map((col) => (
+                  <th
+                    key={col}
+                    className="border border-slate-400 px-3 py-2 text-left"
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {printData.rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={printData.columns.length + 1}
+                    className="border border-slate-400 px-3 py-4 text-center"
+                  >
+                    Tidak ada data siswa
+                  </td>
+                </tr>
+              ) : (
+                printData.rows.map((row, index) => (
+                  <tr key={index}>
+                    <td className="border border-slate-400 px-3 py-2">
+                      {index + 1}
+                    </td>
+                    {row.map((cell, cellIndex) => (
+                      <td
+                        key={cellIndex}
+                        className="border border-slate-400 px-3 py-2"
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </ProtectedRoute>
   )
