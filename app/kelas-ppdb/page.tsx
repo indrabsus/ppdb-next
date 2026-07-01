@@ -46,6 +46,7 @@ type SiswaKelas = {
   siswa_ppdb?: {
     id_siswa: string
     nama_lengkap: string | null
+    jenkel: "l" | "p" | null
     asal_sekolah: string | null
     no_hp: string | null
     minat_jurusan1: string | null
@@ -58,6 +59,21 @@ type PrintData = {
   title: string
   columns: string[]
   rows: string[][]
+  summary: { total: number; lakiLaki: number; perempuan: number }
+}
+
+const hitungJenisKelamin = (list: { siswa_ppdb?: { jenkel: "l" | "p" | null } | undefined }[]) => {
+  return {
+    total: list.length,
+    lakiLaki: list.filter((row) => row.siswa_ppdb?.jenkel === "l").length,
+    perempuan: list.filter((row) => row.siswa_ppdb?.jenkel === "p").length,
+  }
+}
+
+const labelJenisKelamin = (jenkel: "l" | "p" | null | undefined) => {
+  if (jenkel === "l") return "Laki-laki"
+  if (jenkel === "p") return "Perempuan"
+  return "-"
 }
 
 export default function KelasPpdbPage() {
@@ -356,12 +372,14 @@ export default function KelasPpdbPage() {
 
       cetakPdf({
         title: `Daftar Siswa Kelas ${item.nama_kelas} - PPDB ${tahun}`,
-        columns: ["Siswa", "Asal Sekolah", "Kelas"],
+        columns: ["Siswa", "Jenis Kelamin", "Asal Sekolah", "Kelas"],
         rows: data.map((row) => [
           row.siswa_ppdb?.nama_lengkap || "-",
+          labelJenisKelamin(row.siswa_ppdb?.jenkel),
           row.siswa_ppdb?.asal_sekolah || "-",
           row.kelas_ppdb?.nama_kelas || item.nama_kelas,
         ]),
+        summary: hitungJenisKelamin(data),
       })
     } catch (error: any) {
       Swal.fire("Error", error.message || "Terjadi kesalahan", "error")
@@ -406,12 +424,14 @@ export default function KelasPpdbPage() {
 
       cetakPdf({
         title: `Daftar Siswa ${namaJurusan} - PPDB ${tahun}`,
-        columns: ["Nama", "Asal Sekolah", "Jurusan"],
+        columns: ["Nama", "Jenis Kelamin", "Asal Sekolah", "Jurusan"],
         rows: filtered.map((row) => [
           row.siswa_ppdb?.nama_lengkap || "-",
+          labelJenisKelamin(row.siswa_ppdb?.jenkel),
           row.siswa_ppdb?.asal_sekolah || "-",
           row.kelas_ppdb?.jurusan_ppdb?.nama_jurusan || "-",
         ]),
+        summary: hitungJenisKelamin(filtered),
       })
     } catch (error: any) {
       Swal.fire("Error", error.message || "Terjadi kesalahan", "error")
@@ -785,6 +805,18 @@ export default function KelasPpdbPage() {
             <h1 className="text-lg font-bold text-slate-800">
               {printData.title}
             </h1>
+          </div>
+
+          <div className="mb-4 flex gap-6 text-sm">
+            <span>
+              Total Siswa: <strong>{printData.summary.total}</strong>
+            </span>
+            <span>
+              Laki-laki: <strong>{printData.summary.lakiLaki}</strong>
+            </span>
+            <span>
+              Perempuan: <strong>{printData.summary.perempuan}</strong>
+            </span>
           </div>
 
           <table className="w-full border-collapse text-sm">
