@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Edit,
   Eye,
-  FileText,
   ImageIcon,
   Loader2,
   Printer,
@@ -335,7 +334,12 @@ export default function LogPpdbPage() {
   }
 
   const printRekapInternal = () => {
-    const dataPrint = logsTanpaMengundurkan
+    const dataPrint = filteredLogs
+    const transaksiUang = dataPrint.filter((item) => item.jenis !== "l")
+
+    const jumlahDaftar = dataPrint.filter((item) => item.jenis === "d").length
+    const jumlahPpdb = dataPrint.filter((item) => item.jenis === "p").length
+    const jumlahMundur = dataPrint.filter((item) => item.jenis === "l").length
 
     const totalDaftar = dataPrint
       .filter((item) => item.jenis === "d" && item.bayar !== "sbs")
@@ -345,11 +349,24 @@ export default function LogPpdbPage() {
       .filter((item) => item.jenis === "p" && item.bayar !== "sbs")
       .reduce((sum, item) => sum + toNumber(item.nominal), 0)
 
-    const totalSubsidi = dataPrint
-      .filter((item) => item.bayar === "sbs")
+    const jumlahCash = transaksiUang.filter((item) => item.bayar === "csh").length
+    const nominalCash = transaksiUang
+      .filter((item) => item.bayar === "csh")
+      .reduce((sum, item) => sum + toNumber(item.nominal), 0)
+
+    const jumlahTransfer = transaksiUang.filter(
+      (item) => item.bayar === "trf"
+    ).length
+    const nominalTransfer = transaksiUang
+      .filter((item) => item.bayar === "trf")
+      .reduce((sum, item) => sum + toNumber(item.nominal), 0)
+
+    const totalMundur = dataPrint
+      .filter((item) => item.jenis === "l")
       .reduce((sum, item) => sum + toNumber(item.nominal), 0)
 
     const totalNominal = totalDaftar + totalPpdb
+    const nominalBersih = totalNominal - totalMundur
 
     const html = `
       <html>
@@ -403,6 +420,16 @@ export default function LogPpdbPage() {
             .card .value {
               font-size: 17px;
               font-weight: bold;
+            }
+
+            .card .sub {
+              font-size: 12px;
+              color: #64748b;
+              margin-top: 2px;
+            }
+
+            .mundur td {
+              color: #dc2626;
             }
 
             table {
@@ -460,28 +487,50 @@ export default function LogPpdbPage() {
 
           <div class="cards">
             <div class="card">
-              <div class="label">Total Log</div>
+              <div class="label">Total Transaksi</div>
               <div class="value">${dataPrint.length}</div>
             </div>
 
             <div class="card">
-              <div class="label">Uang Daftar</div>
-              <div class="value">${rupiah(totalDaftar)}</div>
+              <div class="label">Pendaftaran</div>
+              <div class="value">${jumlahDaftar}</div>
+              <div class="sub">${rupiah(totalDaftar)}</div>
             </div>
 
             <div class="card">
-              <div class="label">Uang PPDB</div>
-              <div class="value">${rupiah(totalPpdb)}</div>
+              <div class="label">PPDB</div>
+              <div class="value">${jumlahPpdb}</div>
+              <div class="sub">${rupiah(totalPpdb)}</div>
             </div>
 
             <div class="card">
-              <div class="label">Total Masuk</div>
+              <div class="label">Mengundurkan Diri</div>
+              <div class="value" style="color:#dc2626">${jumlahMundur}</div>
+              <div class="sub">${rupiah(totalMundur)}</div>
+            </div>
+          </div>
+
+          <div class="cards">
+            <div class="card">
+              <div class="label">Cash</div>
+              <div class="value">${jumlahCash}</div>
+              <div class="sub">${rupiah(nominalCash)}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Transfer</div>
+              <div class="value">${jumlahTransfer}</div>
+              <div class="sub">${rupiah(nominalTransfer)}</div>
+            </div>
+
+            <div class="card">
+              <div class="label">Total Nominal Masuk</div>
               <div class="value">${rupiah(totalNominal)}</div>
             </div>
 
             <div class="card">
-              <div class="label">Nominal Subsidi</div>
-              <div class="value">${rupiah(totalSubsidi)}</div>
+              <div class="label">Nominal Bersih</div>
+              <div class="value">${rupiah(nominalBersih)}</div>
             </div>
           </div>
 
@@ -491,7 +540,6 @@ export default function LogPpdbPage() {
                 <th>No</th>
                 <th>Tanggal</th>
                 <th>Nama Siswa</th>
-                <th>Invoice</th>
                 <th>Status</th>
                 <th>Via</th>
                 <th>Petugas</th>
@@ -502,15 +550,14 @@ export default function LogPpdbPage() {
             <tbody>
               ${
                 dataPrint.length === 0
-                  ? `<tr><td colspan="8" style="text-align:center">Tidak ada data</td></tr>`
+                  ? `<tr><td colspan="7" style="text-align:center">Tidak ada data</td></tr>`
                   : dataPrint
                       .map(
                         (item, index) => `
-                          <tr>
+                          <tr class="${item.jenis === "l" ? "mundur" : ""}">
                             <td>${index + 1}</td>
                             <td>${formatTanggal(item.created_at)}</td>
                             <td>${item.siswa_ppdb?.nama_lengkap || "-"}</td>
-                            <td>${item.no_invoice || "-"}</td>
                             <td>${jenisLabel[item.jenis]}</td>
                             <td>${item.bayar ? bayarLabel[item.bayar] : "-"}</td>
                             <td>${item.petugas || "-"}</td>
@@ -547,20 +594,6 @@ export default function LogPpdbPage() {
     printWindow.document.open()
     printWindow.document.write(html)
     printWindow.document.close()
-  }
-
-  const printRekapExternal = () => {
-    if (!startDate || !endDate) {
-      Swal.fire(
-        "Tanggal belum lengkap",
-        "Isi start date dan end date terlebih dahulu.",
-        "warning"
-      )
-      return
-    }
-
-    const url = `${PRINT_BASE}/rekapharianppdb?start_date=${startDate}&end_date=${endDate}&tahun=${tahun}`
-    window.open(url, "_blank")
   }
 
   return (
@@ -624,7 +657,7 @@ export default function LogPpdbPage() {
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -659,14 +692,6 @@ export default function LogPpdbPage() {
                   onChange={(e) => setEndDate(e.target.value)}
                   className="rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none"
                 />
-
-                <button
-                  onClick={printRekapExternal}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-                >
-                  <FileText size={16} />
-                  Print Lama
-                </button>
               </div>
             </section>
 
