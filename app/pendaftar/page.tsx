@@ -365,6 +365,27 @@ export default function PendaftarPage() {
   const kirimWaMasal = async () => {
     if (selectedSiswaList.length === 0) return
 
+    const pilihTarget = await Swal.fire({
+      title: "Kirim WhatsApp Ke Siapa?",
+      text: "Pilih nomor tujuan pengiriman pesan.",
+      icon: "question",
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: "Ke Siswa",
+      denyButtonText: "Ke Orang Tua",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#16a34a",
+      denyButtonColor: "#2563eb",
+      cancelButtonColor: "#64748b",
+    })
+
+    if (!pilihTarget.isConfirmed && !pilihTarget.isDenied) return
+
+    const target: "siswa" | "ortu" = pilihTarget.isConfirmed ? "siswa" : "ortu"
+    const labelTarget = target === "siswa" ? "siswa" : "orang tua"
+    const getNomor = (item: SiswaPpdb) =>
+      target === "siswa" ? item.no_hp : item.no_hp_ortu
+
     const defaultPesan = `Assalamualaikum, Bapak/Ibu.
 
 Kami dari Panitia PPDB SMK Sangkuriang 1 Cimahi ingin menginformasikan terkait pendaftaran PPDB tahun ${tahun}.
@@ -376,7 +397,7 @@ Terima kasih.`
       html: `
         <div style="text-align:left">
           <p style="font-size:14px;margin-bottom:10px;color:#64748b">
-            Pesan akan dikirim ke <b>${selectedSiswaList.length}</b> nomor WhatsApp terpilih.
+            Pesan akan dikirim ke <b>${selectedSiswaList.length}</b> nomor WhatsApp ${labelTarget} terpilih.
           </p>
           <textarea id="pesan-wa" class="swal2-textarea" style="height:180px;resize:none">${defaultPesan}</textarea>
         </div>
@@ -409,7 +430,7 @@ Terima kasih.`
 
     const confirm = await MySwal.fire({
       title: "Konfirmasi Pengiriman",
-      html: `Yakin ingin mengirim pesan ke <b>${selectedSiswaList.length}</b> siswa?`,
+      html: `Yakin ingin mengirim pesan ke <b>${selectedSiswaList.length}</b> ${labelTarget}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Ya, Kirim",
@@ -436,7 +457,9 @@ Terima kasih.`
       const gagalList: string[] = []
 
       for (const item of selectedSiswaList) {
-        if (!item.no_hp) {
+        const nomor = getNomor(item)
+
+        if (!nomor) {
           gagal++
           gagalList.push(`${item.nama_lengkap || "-"}: nomor kosong`)
           continue
@@ -449,7 +472,7 @@ Terima kasih.`
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              nomor: item.no_hp,
+              nomor,
               pesan,
             }),
           })
@@ -622,6 +645,10 @@ Terima kasih.`
                             Asal Sekolah {sortLabel("asal_sekolah")}
                           </SortableTh>
 
+                          <th className="px-4 py-3 text-left">
+                            No HP Orang Tua
+                          </th>
+
                           <SortableTh onClick={() => handleSort("pembayaran")}>
                             Pembayaran {sortLabel("pembayaran")}
                           </SortableTh>
@@ -644,7 +671,7 @@ Terima kasih.`
                         {paginatedSiswa.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={7}
+                              colSpan={8}
                               className="px-4 py-10 text-center text-slate-500"
                             >
                               Data tidak ditemukan
@@ -681,6 +708,10 @@ Terima kasih.`
 
                                 <td className="px-4 py-3">
                                   {item.asal_sekolah || "-"}
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  {item.no_hp_ortu || "-"}
                                 </td>
 
                                 <td className="px-4 py-3">
@@ -1182,6 +1213,24 @@ function ModalKelas({
   )
 }
 
+const LABEL_EDIT_SISWA: Record<string, string> = {
+  nama_lengkap: "Nama Lengkap",
+  tempat_lahir: "Tempat Lahir",
+  tanggal_lahir: "Tanggal Lahir",
+  jenkel: "Jenis Kelamin",
+  agama: "Agama",
+  alamat: "Alamat",
+  nisn: "NISN",
+  nik_siswa: "NIK Siswa",
+  nama_ayah: "Nama Ayah",
+  nama_ibu: "Nama Ibu",
+  asal_sekolah: "Asal Sekolah",
+  minat_jurusan1: "Minat Jurusan 1",
+  minat_jurusan2: "Minat Jurusan 2",
+  no_hp: "No HP Siswa",
+  no_hp_ortu: "No HP Orang Tua",
+}
+
 function ModalEdit({
   siswa,
   onClose,
@@ -1207,6 +1256,7 @@ function ModalEdit({
     minat_jurusan1: siswa.minat_jurusan1 || "",
     minat_jurusan2: siswa.minat_jurusan2 || "",
     no_hp: siswa.no_hp || "",
+    no_hp_ortu: siswa.no_hp_ortu || "",
   })
 
   const submit = async () => {
@@ -1245,18 +1295,21 @@ function ModalEdit({
         {Object.entries(form)
           .filter(([key]) => key !== "id_siswa")
           .map(([key, value]) => (
-            <input
-              key={key}
-              value={value}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  [key]: e.target.value,
-                })
-              }
-              placeholder={key}
-              className="w-full rounded-xl border px-4 py-2"
-            />
+            <div key={key}>
+              <label className="mb-1 block text-sm text-slate-600">
+                {LABEL_EDIT_SISWA[key] || key}
+              </label>
+              <input
+                value={value}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    [key]: e.target.value,
+                  })
+                }
+                className="w-full rounded-xl border px-4 py-2"
+              />
+            </div>
           ))}
 
         <button
