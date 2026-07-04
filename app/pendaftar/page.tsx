@@ -7,12 +7,14 @@ import ProtectedRoute from "@/components/protected-route"
 import Swal from "sweetalert2"
 import withReactContent from "sweetalert2-react-content"
 import {
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   CreditCard,
   Edit,
   Loader2,
   MessageCircle,
+  Printer,
   Trash2,
   UserX,
   Users,
@@ -82,6 +84,7 @@ type MasterPpdb = {
 type SortKey =
   | "created_at"
   | "nama_lengkap"
+  | "nisn"
   | "asal_sekolah"
   | "pembayaran"
   | "minat_jurusan1"
@@ -109,6 +112,16 @@ const getKelasSiswa = (siswaBaru: SiswaPpdb["siswa_baru"]) => {
   }
 
   return siswaBaru.kelas_ppdb?.nama_kelas || "-"
+}
+
+const isNisnValid = (nisn: string | null) => {
+  if (!nisn) return false
+
+  const value = nisn.trim()
+  if (!/^\d{10}$/.test(value)) return false
+
+  const isAsalAsalan = /^(\d)\1{9}$/.test(value) || value === "1234567890"
+  return !isAsalAsalan
 }
 
 export default function PendaftarPage() {
@@ -219,6 +232,7 @@ export default function PendaftarPage() {
       mengundurkan: siswa.filter((item) => item.bayar_daftar === "l").length,
       ppdb1jt: siswa.filter((item) => hitungPpdb(item) >= 1000000).length,
       lunas: siswa.filter((item) => isLunas(item)).length,
+      nisnInvalid: siswa.filter((item) => !isNisnValid(item.nisn)).length,
     }
   }, [siswa, master])
 
@@ -241,6 +255,10 @@ export default function PendaftarPage() {
 
     if (filter === "lunas") {
       return { title: "PPDB Lunas", value: statistik.lunas }
+    }
+
+    if (filter === "nisn_invalid") {
+      return { title: "NISN Tidak Valid", value: statistik.nisnInvalid }
     }
 
     return { title: "Semua Pendaftar", value: statistik.total }
@@ -266,6 +284,7 @@ export default function PendaftarPage() {
       if (filter === "l") return item.bayar_daftar === "l"
       if (filter === "ppdb_1jt") return totalPpdb >= 1000000
       if (filter === "lunas") return isLunas(item)
+      if (filter === "nisn_invalid") return !isNisnValid(item.nisn)
 
       return true
     })
@@ -286,6 +305,11 @@ export default function PendaftarPage() {
       if (sortKey === "nama_lengkap") {
         valA = a.nama_lengkap || ""
         valB = b.nama_lengkap || ""
+      }
+
+      if (sortKey === "nisn") {
+        valA = a.nisn || ""
+        valB = b.nisn || ""
       }
 
       if (sortKey === "asal_sekolah") {
@@ -522,6 +546,205 @@ Terima kasih.`
     }
   }
 
+  const statusLabel = (item: SiswaPpdb) => {
+    const totalPpdb = hitungPpdb(item)
+    const biayaPpdb = master?.ppdb || 0
+
+    if (!sudahDaftar(item)) return "Belum Daftar"
+    if (item.bayar_daftar === "l") return "Mengundurkan Diri"
+    if (isLunas(item)) return "Lunas"
+
+    return `${rupiah(totalPpdb)} / ${rupiah(biayaPpdb)}`
+  }
+
+  const printPdf = () => {
+    const dataPrint = sortedSiswa
+
+    const html = `
+      <html>
+        <head>
+          <title>Data Pendaftar ${cardUtama.title} - PPDB ${tahun}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 24px;
+              color: #0f172a;
+            }
+
+            h1, h2, p {
+              margin: 0;
+            }
+
+            .header {
+              text-align: center;
+              margin-bottom: 24px;
+            }
+
+            .header h1 {
+              font-size: 22px;
+              margin-bottom: 6px;
+            }
+
+            .header p {
+              font-size: 13px;
+              color: #475569;
+            }
+
+            .cards {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 12px;
+              margin-bottom: 20px;
+            }
+
+            .card {
+              border: 1px solid #cbd5e1;
+              border-radius: 12px;
+              padding: 12px;
+            }
+
+            .card .label {
+              font-size: 12px;
+              color: #64748b;
+              margin-bottom: 6px;
+            }
+
+            .card .value {
+              font-size: 17px;
+              font-weight: bold;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 12px;
+            }
+
+            th, td {
+              border: 1px solid #cbd5e1;
+              padding: 8px;
+            }
+
+            th {
+              background: #f1f5f9;
+              text-align: left;
+            }
+
+            .mundur td {
+              color: #dc2626;
+            }
+
+            .invalid {
+              color: #dc2626;
+              font-weight: bold;
+            }
+
+            .footer {
+              margin-top: 30px;
+              display: flex;
+              justify-content: flex-end;
+            }
+
+            .ttd {
+              width: 220px;
+              text-align: center;
+              font-size: 13px;
+            }
+
+            @media print {
+              body {
+                padding: 12px;
+              }
+            }
+          </style>
+        </head>
+
+        <body>
+          <div class="header">
+            <h1>DATA PENDAFTAR PPDB ${tahun}</h1>
+            <p>SMK Sangkuriang 1 Cimahi</p>
+            <p>
+              ${cardUtama.title}${search ? ` &mdash; pencarian "${search}"` : ""}
+            </p>
+          </div>
+
+          <div class="cards">
+            <div class="card">
+              <div class="label">Total Data</div>
+              <div class="value">${dataPrint.length}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>NISN</th>
+                <th>Asal Sekolah</th>
+                <th>No HP Orang Tua</th>
+                <th>Status</th>
+                <th>Minat Jurusan</th>
+                <th>Kelas</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${
+                dataPrint.length === 0
+                  ? `<tr><td colspan="8" style="text-align:center">Tidak ada data</td></tr>`
+                  : dataPrint
+                      .map((item, index) => {
+                        const minat = [item.minat_jurusan1, item.minat_jurusan2]
+                          .filter(Boolean)
+                          .join(", ")
+
+                        return `
+                          <tr class="${item.bayar_daftar === "l" ? "mundur" : ""}">
+                            <td>${index + 1}</td>
+                            <td>${item.nama_lengkap || "-"}</td>
+                            <td class="${isNisnValid(item.nisn) ? "" : "invalid"}">${
+                          item.nisn || "Kosong"
+                        }</td>
+                            <td>${item.asal_sekolah || "-"}</td>
+                            <td>${item.no_hp_ortu || "-"}</td>
+                            <td>${statusLabel(item)}</td>
+                            <td>${minat || "-"}</td>
+                            <td>${getKelasSiswa(item.siswa_baru)}</td>
+                          </tr>
+                        `
+                      })
+                      .join("")
+              }
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <div class="ttd">
+              <p>Cimahi, ${new Date().toLocaleDateString("id-ID")}</p>
+              <p>Panitia PPDB</p>
+              <br/><br/><br/>
+              <p>________________________</p>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print()
+            }
+          </script>
+        </body>
+      </html>
+    `
+
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+
+    printWindow.document.open()
+    printWindow.document.write(html)
+    printWindow.document.close()
+  }
+
   const openBayar = (item: SiswaPpdb) => {
     setSelectedSiswa(item)
     setModalBayar(true)
@@ -585,6 +808,7 @@ Terima kasih.`
                   <option value="l">Mengundurkan Diri</option>
                   <option value="ppdb_1jt">PPDB ≥ 1 Juta</option>
                   <option value="lunas">PPDB Lunas</option>
+                  <option value="nisn_invalid">NISN Tidak Valid</option>
                 </select>
 
                 <input
@@ -593,6 +817,14 @@ Terima kasih.`
                   placeholder="Cari nama, sekolah, jurusan..."
                   className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none"
                 />
+
+                <button
+                  onClick={printPdf}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  <Printer size={16} />
+                  Print PDF
+                </button>
               </div>
             </div>
 
@@ -641,6 +873,10 @@ Terima kasih.`
                             Nama {sortLabel("nama_lengkap")}
                           </SortableTh>
 
+                          <SortableTh onClick={() => handleSort("nisn")}>
+                            NISN {sortLabel("nisn")}
+                          </SortableTh>
+
                           <SortableTh onClick={() => handleSort("asal_sekolah")}>
                             Asal Sekolah {sortLabel("asal_sekolah")}
                           </SortableTh>
@@ -671,7 +907,7 @@ Terima kasih.`
                         {paginatedSiswa.length === 0 ? (
                           <tr>
                             <td
-                              colSpan={8}
+                              colSpan={9}
                               className="px-4 py-10 text-center text-slate-500"
                             >
                               Data tidak ditemukan
@@ -704,6 +940,24 @@ Terima kasih.`
                                   <div className="text-xs text-slate-500">
                                     {item.no_hp || "-"}
                                   </div>
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  {isNisnValid(item.nisn) ? (
+                                    <span>{item.nisn}</span>
+                                  ) : (
+                                    <span
+                                      title={
+                                        item.nisn
+                                          ? "NISN tidak valid (harus 10 digit angka)"
+                                          : "NISN kosong"
+                                      }
+                                      className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700"
+                                    >
+                                      <AlertTriangle size={12} />
+                                      {item.nisn || "Kosong"}
+                                    </span>
+                                  )}
                                 </td>
 
                                 <td className="px-4 py-3">

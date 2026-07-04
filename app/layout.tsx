@@ -1,6 +1,12 @@
 import type { Metadata } from "next"
+import { Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 import TopLoader from "@/components/top-loader"
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
 
 export const metadata: Metadata = {
   title: "PPDB",
@@ -13,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="id">
+    <html lang="id" className={plusJakartaSans.variable}>
       <body>
         <TopLoader />
         {children}
