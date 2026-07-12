@@ -22,7 +22,6 @@ import {
 
 const MySwal = withReactContent(Swal)
 const API_PPDB = process.env.NEXT_PUBLIC_API_URL
-const API_WA = process.env.NEXT_PUBLIC_API_WA
 const PAGE_SIZE = 10
 
 type LogPpdb = {
@@ -479,6 +478,7 @@ Terima kasih.`
       let sukses = 0
       let gagal = 0
       const gagalList: string[] = []
+      const token = localStorage.getItem("token_ppdb")
 
       for (const item of selectedSiswaList) {
         const nomor = getNomor(item)
@@ -490,10 +490,11 @@ Terima kasih.`
         }
 
         try {
-          const res = await fetch(`${API_WA}/notifuser`, {
+          const res = await fetch(`${API_PPDB}/wa/kirim`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
               nomor,
