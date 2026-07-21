@@ -17,7 +17,6 @@ import {
 
 const API_PPDB = process.env.NEXT_PUBLIC_API_URL
 const PAGE_SIZE = 25
-const PRINT_BASE = "https://sakuci.id"
 
 type JenisLog = "d" | "p" | "l"
 type BayarVia = "csh" | "trf" | "sbs"
@@ -329,8 +328,173 @@ export default function LogPpdbPage() {
     setModalBukti(true)
   }
 
-  const printBukti = (idLog: string) => {
-    window.open(`${PRINT_BASE}/${idLog}/ppdbLog`, "_blank")
+  const printKuitansi = (item: LogPpdb) => {
+    const namaSiswa = item.siswa_ppdb?.nama_lengkap || "-"
+    const asalSekolah = item.siswa_ppdb?.asal_sekolah || "-"
+    const nominal = rupiah(toNumber(item.nominal))
+    const status = item.jenis === "d" ? "Pendaftaran" : jenisLabel[item.jenis]
+    const via = item.bayar ? bayarLabel[item.bayar] : "-"
+    const petugas = item.petugas || "-"
+    const noInvoice = item.no_invoice || item.id_log
+    const tanggal = formatTanggal(item.created_at)
+
+    const html = `
+      <html>
+        <head>
+          <title>Kuitansi - ${namaSiswa}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 24px;
+              color: #0f172a;
+            }
+
+            h1, h2, p {
+              margin: 0;
+            }
+
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #0f172a;
+              padding-bottom: 12px;
+            }
+
+            .header h1 {
+              font-size: 18px;
+              letter-spacing: 1px;
+            }
+
+            .header p {
+              font-size: 13px;
+              color: #475569;
+              margin-top: 4px;
+            }
+
+            .meta {
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+              color: #475569;
+              margin-bottom: 16px;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 13px;
+              margin-bottom: 24px;
+            }
+
+            td {
+              padding: 8px 4px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+
+            td.label {
+              width: 40%;
+              color: #64748b;
+            }
+
+            td.value {
+              font-weight: bold;
+            }
+
+            .nominal-row td {
+              font-size: 16px;
+              padding-top: 12px;
+            }
+
+            .footer {
+              margin-top: 40px;
+              display: flex;
+              justify-content: flex-end;
+            }
+
+            .ttd {
+              width: 220px;
+              text-align: center;
+              font-size: 13px;
+            }
+
+            .ttd .space {
+              height: 70px;
+            }
+
+            .ttd .nama {
+              font-weight: bold;
+              border-top: 1px solid #0f172a;
+              padding-top: 4px;
+            }
+
+            @media print {
+              body {
+                padding: 12px;
+              }
+            }
+          </style>
+        </head>
+
+        <body>
+          <div class="header">
+            <h1>KUITANSI PEMBAYARAN PPDB</h1>
+            <p>SMK Sangkuriang 1 Cimahi</p>
+          </div>
+
+          <div class="meta">
+            <span>No. Invoice: ${noInvoice}</span>
+            <span>${tanggal}</span>
+          </div>
+
+          <table>
+            <tbody>
+              <tr>
+                <td class="label">Nama Siswa</td>
+                <td class="value">${namaSiswa}</td>
+              </tr>
+              <tr>
+                <td class="label">Asal Sekolah</td>
+                <td class="value">${asalSekolah}</td>
+              </tr>
+              <tr>
+                <td class="label">Status</td>
+                <td class="value">${status}</td>
+              </tr>
+              <tr>
+                <td class="label">Via</td>
+                <td class="value">${via}</td>
+              </tr>
+              <tr class="nominal-row">
+                <td class="label">Nominal</td>
+                <td class="value">${nominal}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <div class="ttd">
+              <p>Cimahi, ${new Date().toLocaleDateString("id-ID")}</p>
+              <p>Petugas,</p>
+              <div class="space"></div>
+              <p class="nama">${petugas}</p>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print()
+            }
+          </script>
+        </body>
+      </html>
+    `
+
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+
+    printWindow.document.open()
+    printWindow.document.write(html)
+    printWindow.document.close()
   }
 
   const printRekapInternal = () => {
@@ -802,8 +966,8 @@ export default function LogPpdbPage() {
                               <td className="px-4 py-3">
                                 <div className="mx-auto flex w-fit overflow-hidden rounded-xl border border-slate-200">
                                   <button
-                                    onClick={() => printBukti(item.id_log)}
-                                    title="Print bukti"
+                                    onClick={() => printKuitansi(item)}
+                                    title="Print kuitansi"
                                     className="border-r px-3 py-2 text-blue-600 hover:bg-blue-50"
                                   >
                                     <Printer size={16} />
