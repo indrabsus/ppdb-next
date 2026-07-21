@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import AppHeader from "@/components/app-header"
 import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
+import { handleUnauthorized } from "@/lib/api"
 import Swal from "sweetalert2"
 import {
   ChevronLeft,
@@ -159,6 +160,8 @@ export default function LogPpdbPage() {
         fetch(`${API_PPDB}/ppdb/log/${tahunAktif}`, { headers }),
         fetch(`${API_PPDB}/ppdb/masterppdb?tahun=${tahunAktif}`, { headers }),
       ])
+
+      if (handleUnauthorized(logRes) || handleUnauthorized(masterRes)) return
 
       const logJson = await logRes.json()
       const masterJson = await masterRes.json()
@@ -1047,6 +1050,8 @@ function ModalEditLog({
         body: formData,
       })
 
+      if (handleUnauthorized(res)) return
+
       const json = await res.json()
 
       if (!res.ok) {
@@ -1102,6 +1107,8 @@ function ModalEditLog({
           id_siswa: log.id_siswa,
         }),
       })
+
+      if (handleUnauthorized(res)) return
 
       const json = await res.json()
 

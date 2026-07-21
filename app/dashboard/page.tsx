@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import AppHeader from "@/components/app-header"
 import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
+import { handleUnauthorized } from "@/lib/api"
 import {
   Banknote,
   CreditCard,
@@ -115,6 +116,8 @@ export default function DashboardPage() {
           },
         }
       )
+
+      if (handleUnauthorized(res)) return
 
       const result = await res.json()
 

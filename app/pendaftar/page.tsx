@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import AppHeader from "@/components/app-header"
 import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
+import { handleUnauthorized } from "@/lib/api"
 import Swal from "sweetalert2"
 import withReactContent from "sweetalert2-react-content"
 import {
@@ -191,6 +192,15 @@ export default function PendaftarPage() {
         fetch(`${API_PPDB}/ppdb/kelas?tahun=${tahunAktif}`, { headers }),
         fetch(`${API_PPDB}/ppdb/masterppdb?tahun=${tahunAktif}`, { headers }),
       ])
+
+      if (
+        handleUnauthorized(resN) ||
+        handleUnauthorized(resY) ||
+        handleUnauthorized(resL) ||
+        handleUnauthorized(kelasRes) ||
+        handleUnauthorized(masterRes)
+      )
+        return
 
       const jsonN = await resN.json()
       const jsonY = await resY.json()
@@ -501,6 +511,8 @@ Terima kasih.`
               pesan,
             }),
           })
+
+          if (handleUnauthorized(res)) return
 
           if (res.ok) {
             sukses++
@@ -1234,6 +1246,8 @@ function ModalBayar({
         body: formData,
       })
 
+      if (handleUnauthorized(res)) return
+
       const json = await res.json()
 
       if (!res.ok) {
@@ -1419,6 +1433,8 @@ function ModalKelas({
         }),
       })
 
+      if (handleUnauthorized(res)) return
+
       const json = await res.json()
 
       if (!res.ok) {
@@ -1525,6 +1541,8 @@ function ModalEdit({
       },
       body: JSON.stringify(form),
     })
+
+    if (handleUnauthorized(res)) return
 
     const json = await res.json()
 
@@ -1633,6 +1651,8 @@ function ModalHapus({
         }),
       })
 
+      if (handleUnauthorized(res)) return
+
       const json = await res.json()
 
       if (!res.ok) {
@@ -1687,6 +1707,8 @@ function ModalHapus({
           id_siswa: siswa.id_siswa,
         }),
       })
+
+      if (handleUnauthorized(res)) return
 
       const json = await res.json()
 

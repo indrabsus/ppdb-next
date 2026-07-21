@@ -12,6 +12,7 @@ import {
 import AppHeader from "@/components/app-header"
 import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
+import { handleUnauthorized } from "@/lib/api"
 
 export default function BackupRestorePage() {
   const [file, setFile] = useState<File | null>(null)
@@ -38,6 +39,8 @@ export default function BackupRestorePage() {
           },
         }
       )
+
+      if (handleUnauthorized(response)) return
 
       if (!response.ok) {
         throw new Error("Backup gagal")
@@ -114,6 +117,8 @@ export default function BackupRestorePage() {
           body: JSON.stringify(json),
         }
       )
+
+      if (handleUnauthorized(response)) return
 
       const result = await response.json()
 

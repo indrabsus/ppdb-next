@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import AppHeader from "@/components/app-header"
 import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
+import { handleUnauthorized } from "@/lib/api"
 import Swal from "sweetalert2"
 import {
   Download,
@@ -125,6 +126,8 @@ export default function KelasPpdbPage() {
         }),
       ])
 
+      if (handleUnauthorized(kelasRes) || handleUnauthorized(jurusanRes)) return
+
       const kelasJson = await kelasRes.json()
       const jurusanJson = await jurusanRes.json()
 
@@ -166,6 +169,8 @@ export default function KelasPpdbPage() {
               },
             }
           )
+
+          if (handleUnauthorized(countRes)) return
 
           const countJson = await countRes.json()
           result[item.id_kelas] = Number(countJson.data || 0)
@@ -211,6 +216,8 @@ export default function KelasPpdbPage() {
           },
         }
       )
+
+      if (handleUnauthorized(res)) return
 
       const json = await res.json()
 
@@ -263,6 +270,8 @@ export default function KelasPpdbPage() {
         },
       })
 
+      if (handleUnauthorized(res)) return
+
       const json = await res.json()
 
       if (!res.ok) {
@@ -307,6 +316,8 @@ export default function KelasPpdbPage() {
           Authorization: `Bearer ${token}`,
         },
       })
+
+      if (handleUnauthorized(res)) return
 
       const json = await res.json()
 
@@ -361,6 +372,8 @@ export default function KelasPpdbPage() {
         }
       )
 
+      if (handleUnauthorized(res)) return
+
       const json = await res.json()
 
       if (!res.ok) {
@@ -399,6 +412,8 @@ export default function KelasPpdbPage() {
           Authorization: `Bearer ${token}`,
         },
       })
+
+      if (handleUnauthorized(res)) return
 
       const json = await res.json()
 
@@ -921,6 +936,8 @@ function ModalFormKelas({
           id_jurusan: idJurusan,
         }),
       })
+
+      if (handleUnauthorized(res)) return
 
       const json = await res.json()
 

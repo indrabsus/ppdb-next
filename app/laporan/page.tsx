@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import AppHeader from "@/components/app-header"
 import AppSidebar from "@/components/app-sidebar"
 import ProtectedRoute from "@/components/protected-route"
+import { handleUnauthorized } from "@/lib/api"
 import Swal from "sweetalert2"
 import { Loader2, Printer, Users, Wallet, School } from "lucide-react"
 
@@ -113,6 +114,16 @@ export default function LaporanPage() {
           fetch(`${API_PPDB}/ppdb/siswakelas/${tahunAktif}`, { headers }),
           fetch(`${API_PPDB}/ppdb/masterppdb?tahun=${tahunAktif}`, { headers }),
         ])
+
+      if (
+        handleUnauthorized(resN) ||
+        handleUnauthorized(resY) ||
+        handleUnauthorized(resL) ||
+        handleUnauthorized(kelasRes) ||
+        handleUnauthorized(siswaKelasRes) ||
+        handleUnauthorized(masterRes)
+      )
+        return
 
       const jsonN = await resN.json()
       const jsonY = await resY.json()
